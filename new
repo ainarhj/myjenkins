@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de tags Cloud</title>
+</head>
+
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #172B4D; background-color: #FFFFFF;">
+
+    <div style="max-width: 800px; margin: 0 auto; padding: 24px; border: 1px solid #DFE1E6; border-radius: 8px; background-color: #FFFFFF;">
+
+        <h1 style="margin-top: 0; margin-bottom: 24px; font-size: 24px;">
+            Générateur de tags Cloud
+        </h1>
+
+        <div style="margin-bottom: 20px;">
+            <label for="cloud" style="display: block; margin-bottom: 8px; font-weight: bold;">
+                Cloud
+            </label>
+
+            <select id="cloud" style="width: 100%; padding: 10px; border: 1px solid #C1C7D0; border-radius: 4px;">
+                <option value="">-- Sélectionner un cloud --</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="service" style="display: block; margin-bottom: 8px; font-weight: bold;">
+                Service
+            </label>
+
+            <select id="service" disabled style="width: 100%; padding: 10px; border: 1px solid #C1C7D0; border-radius: 4px;">
+                <option value="">-- Sélectionner un service --</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="blocking-elements" style="display: block; margin-bottom: 8px; font-weight: bold;">
+                Éléments bloquants
+            </label>
+
+            <select id="blocking-elements" multiple size="7" disabled
+                    style="width: 100%; min-height: 170px; padding: 10px; border: 1px solid #C1C7D0; border-radius: 4px;">
+            </select>
+
+            <span style="display: block; margin-top: 6px; font-size: 12px; color: #6B778C;">
+                Maintenez Ctrl (Windows) ou Cmd (Mac) pour sélectionner plusieurs éléments.
+            </span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px;">
+
+            <button id="generate-button" type="button"
+                    style="padding: 10px 16px; border: none; border-radius: 4px; background-color: #0052CC; color: white; cursor: pointer;">
+                Générer le tag
+            </button>
+
+            <button id="copy-button" type="button"
+                    style="padding: 10px 16px; border: none; border-radius: 4px; background-color: #EBECF0; color: #172B4D; cursor: pointer;">
+                Copier le tag
+            </button>
+
+            <button id="reset-button" type="button"
+                    style="padding: 10px 16px; border: none; border-radius: 4px; background-color: #EBECF0; color: #172B4D; cursor: pointer;">
+                Réinitialiser
+            </button>
+
+        </div>
+
+        <div style="margin-top: 28px; padding: 16px; border: 1px solid #DFE1E6; border-radius: 4px; background-color: #F4F5F7;">
+
+            <h2 style="margin-top: 0; font-size: 18px;">
+                Tag généré
+            </h2>
+
+            <div id="tag-result"
+                 style="min-height: 24px; padding: 12px; border: 1px solid #DFE1E6; border-radius: 4px; background-color: white; overflow-wrap: anywhere; font-family: monospace;">
+                Aucun tag généré.
+            </div>
+
+            <div id="status-message" style="margin-top: 10px; font-size: 13px;" aria-live="polite"></div>
+
+        </div>
+    </div>
+
+    <script>
+        /*
+         * CONFIGURATION
+         *
+         * commonElements :
+         * Éléments disponibles pour tous les services du cloud.
+         *
+         * blockingElements :
+         * Éléments spécifiques à un service.
+         *
+         * excludeElements :
+         * Éléments à exclure pour un service.
+         */
+
+        const configuration = {
+            "cloud-1": {
+                label: "Cloud 1",
+
+                commonElements: [
+                    "network",
+                    "availability"
+                ],
+
+                services: {
+                    "kubernetes": {
+                        label: "Kubernetes",
+
+                        blockingElements: [
+                            "cpu",
+                            "memory",
+                            "disk",
+                            "network"
+                        ],
+
+                        excludeElements: []
+                    },
+
+                    "vm": {
+                        label: "VM",
+
+                        blockingElements: [
+                            "cpu",
+                            "memory",
+                            "disk"
+                        ],
+
+                        excludeElements: [
+                            "availability"
+                        ]
+                    },
+
+                    "database": {
+                        label: "Database",
+
+                        blockingElements: [
+                            "connection",
+                            "storage",
+                            "performance"
+                        ],
+
+                        excludeElements: [
+                            "network"
+                        ]
+                    }
+                }
+            },
+
+            "cloud-2": {
+                label: "Cloud 2",
+
+                commonElements: [
+                    "network",
+                    "availability"
+                ],
+
+                services: {
+                    "kubernetes": {
+                        label: "Kubernetes",
+
+                        blockingElements: [
+                            "cpu",
+                            "memory",
+                            "pod"
+                        ],
+
+                        excludeElements: []
+                    },
+
+                    "object-storage": {
+                        label: "Object Storage",
+
+                        blockingElements: [
+                            "access",
+                            "quota",
+                            "availability"
+                        ],
+
+                        excludeElements: [
+                            "network"
+                        ]
+                    }
+                }
+            },
+
+            "cloud-3": {
+                label: "Cloud 3",
+
+                commonElements: [
+                    "network",
+                    "availability"
+                ],
+
+                services: {
+                    "redis": {
+                        label: "Redis",
+
+                        blockingElements: [
+                            "memory",
+                            "connection",
+                            "latency"
+                        ],
+
+                        excludeElements: []
+                    },
+
+                    "openshift": {
+                        label: "OpenShift",
+
+                        blockingElements: [
+                            "cpu",
+                            "memory",
+                            "deployment"
+                        ],
+
+                        excludeElements: [
+                            "availability"
+                        ]
+                    }
+                }
+            }
+        };
+
+        /*
+         * RÉFÉRENCES HTML
+         */
+
+        const cloudSelect = document.getElementById("cloud");
+        const serviceSelect = document.getElementById("service");
+        const blockingSelect = document.getElementById("blocking-elements");
+
+        const tagResult = document.getElementById("tag-result");
+        const statusMessage = document.getElementById("status-message");
+
+        /*
+         * INITIALISATION DES CLOUDS
+         */
+
+        function initializeClouds() {
+            Object.entries(configuration).forEach(([cloudKey, cloud]) => {
+                const option = document.createElement("option");
+
+                option.value = cloudKey;
+                option.textContent = cloud.label;
+
+                cloudSelect.appendChild(option);
+            });
+        }
+
+        /*
+         * MISE À JOUR DES SERVICES
+         */
+
+        function updateServices() {
+            const selectedCloud = cloudSelect.value;
+
+            serviceSelect.innerHTML =
+                '<option value="">-- Sélectionner un service --</option>';
+
+            blockingSelect.innerHTML = "";
+
+            serviceSelect.disabled = true;
+            blockingSelect.disabled = true;
+
+            clearResult();
+
+            if (!selectedCloud || !configuration[selectedCloud]) {
+                return;
+            }
+
+            const services = configuration[selectedCloud].services;
+
+            Object.entries(services).forEach(([serviceKey, service]) => {
+                const option = document.createElement("option");
+
+                option.value = serviceKey;
+                option.textContent = service.label;
+
+                serviceSelect.appendChild(option);
+            });
+
+            serviceSelect.disabled = false;
+        }
+
+        /*
+         * MISE À JOUR DES ÉLÉMENTS BLOQUANTS
+         *
+         * 1. Récupérer les éléments communs.
+         * 2. Ajouter les éléments spécifiques au service.
+         * 3. Supprimer les doublons.
+         * 4. Exclure les éléments définis dans excludeElements.
+         */
+
+        function updateBlockingElements() {
+            const selectedCloud = cloudSelect.value;
+            const selectedService = serviceSelect.value;
+
+            blockingSelect.innerHTML = "";
+            blockingSelect.disabled = true;
+
+            clearResult();
+
+            if (
+                !selectedCloud ||
+                !selectedService ||
+                !configuration[selectedCloud] ||
+                !configuration[selectedCloud].services[selectedService]
+            ) {
+                return;
+            }
+
+            const cloudConfig = configuration[selectedCloud];
+            const serviceConfig = cloudConfig.services[selectedService];
+
+            const commonElements = cloudConfig.commonElements || [];
+            const blockingElements = serviceConfig.blockingElements || [];
+            const excludeElements = serviceConfig.excludeElements || [];
+
+            const allElements = [
+                ...commonElements,
+                ...blockingElements
+            ];
+
+            const uniqueElements = [...new Set(allElements)];
+
+            const availableElements = uniqueElements.filter(element =>
+                !excludeElements.includes(element)
+            );
+
+            availableElements.forEach(element => {
+                const option = document.createElement("option");
+
+                option.value = element;
+                option.textContent = element;
+
+                blockingSelect.appendChild(option);
+            });
+
+            blockingSelect.disabled = availableElements.length === 0;
+        }
+
+        /*
+         * RÉCUPÉRATION DES ÉLÉMENTS SÉLECTIONNÉS
+         */
+
+        function getSelectedBlockingElements() {
+            return Array.from(blockingSelect.selectedOptions)
+                .map(option => option.value);
+        }
+
+        /*
+         * GÉNÉRATION DU TAG
+         *
+         * Format :
+         * [CLOUD]-[SERVICE]-[ELEMENT1]-[ELEMENT2]
+         */
+
+        function generateTag() {
+            const selectedCloud = cloudSelect.value;
+            const selectedService = serviceSelect.value;
+            const selectedElements = getSelectedBlockingElements();
+
+            clearStatus();
+
+            if (!selectedCloud) {
+                showError("Veuillez sélectionner un cloud.");
+                return;
+            }
+
+            if (!selectedService) {
+                showError("Veuillez sélectionner un service.");
+                return;
+            }
+
+            if (selectedElements.length === 0) {
+                showError("Veuillez sélectionner au moins un élément bloquant.");
+                return;
+            }
+
+            const tag = [
+                selectedCloud,
+                selectedService,
+                ...selectedElements
+            ]
+            .map(element => `[${element.toUpperCase()}]`)
+            .join("-");
+
+            tagResult.textContent = tag;
+
+            showSuccess("Tag généré avec succès.");
+        }
+
+        /*
+         * COPIE DU TAG
+         */
+
+        async function copyTag() {
+            const tag = tagResult.textContent.trim();
+
+            clearStatus();
+
+            if (!tag || tag === "Aucun tag généré.") {
+                showError("Veuillez d'abord générer un tag.");
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(tag);
+
+                showSuccess("Tag copié dans le presse-papiers.");
+
+            } catch (error) {
+                const temporaryInput = document.createElement("textarea");
+
+                temporaryInput.value = tag;
+                temporaryInput.style.position = "fixed";
+                temporaryInput.style.opacity = "0";
+
+                document.body.appendChild(temporaryInput);
+                temporaryInput.select();
+
+                const copied = document.execCommand("copy");
+
+                document.body.removeChild(temporaryInput);
+
+                if (copied) {
+                    showSuccess("Tag copié dans le presse-papiers.");
+                } else {
+                    showError("Copie impossible. Veuillez copier le tag manuellement.");
+                }
+            }
+        }
+
+        /*
+         * RÉINITIALISATION
+         */
+
+        function resetForm() {
+            cloudSelect.value = "";
+
+            serviceSelect.innerHTML =
+                '<option value="">-- Sélectionner un service --</option>';
+
+            blockingSelect.innerHTML = "";
+
+            serviceSelect.disabled = true;
+            blockingSelect.disabled = true;
+
+            clearResult();
+        }
+
+        /*
+         * GESTION DES MESSAGES
+         */
+
+        function showError(message) {
+            statusMessage.textContent = message;
+            statusMessage.style.color = "#DE350B";
+        }
+
+        function showSuccess(message) {
+            statusMessage.textContent = message;
+            statusMessage.style.color = "#00875A";
+        }
+
+        function clearStatus() {
+            statusMessage.textContent = "";
+            statusMessage.style.color = "";
+        }
+
+        function clearResult() {
+            tagResult.textContent = "Aucun tag généré.";
+            clearStatus();
+        }
+
+        /*
+         * ÉVÉNEMENTS
+         */
+
+        cloudSelect.addEventListener("change", updateServices);
+
+        serviceSelect.addEventListener("change", updateBlockingElements);
+
+        document.getElementById("generate-button")
+            .addEventListener("click", generateTag);
+
+        document.getElementById("copy-button")
+            .addEventListener("click", copyTag);
+
+        document.getElementById("reset-button")
+            .addEventListener("click", resetForm);
+
+        /*
+         * INITIALISATION
+         */
+
+        initializeClouds();
+    </script>
+
+</body>
+</html>
