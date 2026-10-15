@@ -1,0 +1,376 @@
+<script>
+(function () {
+  "use strict";
+
+  /*
+   * CONFIGURATION
+   *
+   * Les services dépendent du Cloud.
+   * Les éléments bloquants dépendent du service.
+   *
+   * Remplacez les exemples par vos vraies valeurs.
+   */
+  const configuration = {
+    "cloud-1": {
+      label: "Cloud 1",
+      services: {
+        "kubernetes": {
+          label: "Kubernetes",
+          blockingElements: [
+            { value: "cpu", label: "CPU" },
+            { value: "memory", label: "Memory" },
+            { value: "disk", label: "Disk" },
+            { value: "network", label: "Network" }
+          ]
+        },
+        "vm": {
+          label: "VM",
+          blockingElements: [
+            { value: "cpu", label: "CPU" },
+            { value: "memory", label: "Memory" },
+            { value: "disk", label: "Disk" }
+          ]
+        },
+        "database": {
+          label: "Database",
+          blockingElements: [
+            { value: "connection", label: "Connection" },
+            { value: "storage", label: "Storage" },
+            { value: "performance", label: "Performance" }
+          ]
+        }
+      }
+    },
+
+    "cloud-2": {
+      label: "Cloud 2",
+      services: {
+        "kubernetes": {
+          label: "Kubernetes",
+          blockingElements: [
+            { value: "cpu", label: "CPU" },
+            { value: "memory", label: "Memory" },
+            { value: "pod", label: "Pod" }
+          ]
+        },
+        "object-storage": {
+          label: "Object Storage",
+          blockingElements: [
+            { value: "access", label: "Access" },
+            { value: "quota", label: "Quota" },
+            { value: "availability", label: "Availability" }
+          ]
+        }
+      }
+    },
+
+    "cloud-3": {
+      label: "Cloud 3",
+      services: {
+        "redis": {
+          label: "Redis",
+          blockingElements: [
+            { value: "memory", label: "Memory" },
+            { value: "connection", label: "Connection" },
+            { value: "latency", label: "Latency" }
+          ]
+        },
+        "openshift": {
+          label: "OpenShift",
+          blockingElements: [
+            { value: "cpu", label: "CPU" },
+            { value: "memory", label: "Memory" },
+            { value: "deployment", label: "Deployment" }
+          ]
+        }
+      }
+    }
+  };
+
+  const cloudSelect = document.getElementById("cloud-select");
+  const serviceSelect = document.getElementById("service-select");
+  const blockingSelect = document.getElementById("blocking-elements-select");
+  const tagResult = document.getElementById("tag-result");
+  const generateButton = document.getElementById("generate-button");
+  const copyButton = document.getElementById("copy-button");
+  const tagMessage = document.getElementById("tag-message");
+
+  let generatedTag = "";
+
+  /*
+   * Remplit une liste déroulante simple.
+   */
+  function populateSelect(select, options, placeholder) {
+    select.replaceChildren();
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = placeholder;
+    select.appendChild(defaultOption);
+
+    options.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item.value;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+
+    select.disabled = options.length === 0;
+  }
+
+  /*
+   * Remplit la liste multisélection des éléments bloquants.
+   */
+  function populateMultipleSelect(select, options) {
+    select.replaceChildren();
+
+    options.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item.value;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+
+    select.disabled = options.length === 0;
+  }
+
+  /*
+   * Normalise une valeur pour respecter le format du tag.
+   */
+  function normalizeTag(value) {
+    return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  /*
+   * Récupère les éléments bloquants sélectionnés.
+   */
+  function getSelectedBlockingElements() {
+    return Array.from(blockingSelect.selectedOptions)
+      .map(function (option) {
+        return option.value;
+      });
+  }
+
+  /*
+   * Réinitialise le résultat.
+   */
+  function resetResult(message) {
+    generatedTag = "";
+    tagResult.textContent = message;
+    tagMessage.textContent = "";
+    copyButton.disabled = true;
+  }
+
+  /*
+   * Vérifie les choix et récupère la configuration autorisée.
+   */
+  function getValidSelection() {
+    const cloudKey = cloudSelect.value;
+    const serviceKey = serviceSelect.value;
+
+    const cloud = configuration[cloudKey];
+
+    if (!cloud || !cloud.services[serviceKey]) {
+      return null;
+    }
+
+    const service = cloud.services[serviceKey];
+
+    const selectedElements = getSelectedBlockingElements();
+
+    const allowedElements = service.blockingElements.map(function (item) {
+      return item.value;
+    });
+
+    if (
+      selectedElements.length === 0 ||
+      selectedElements.some(function (item) {
+        return !allowedElements.includes(item);
+      })
+    ) {
+      return null;
+    }
+
+    return {
+      cloudKey: cloudKey,
+      serviceKey: serviceKey,
+      selectedElements: selectedElements
+    };
+  }
+
+  /*
+   * Met à jour les services lorsque le Cloud change.
+   */
+  function updateServices() {
+    const cloud = configuration[cloudSelect.value];
+
+    const services = cloud
+      ? Object.keys(cloud.services).map(function (key) {
+          return {
+            value: key,
+            label: cloud.services[key].label
+          };
+        })
+      : [];
+
+    populateSelect(
+      serviceSelect,
+      services,
+      "-- Sélectionner un service --"
+    );
+
+    populateMultipleSelect(blockingSelect, []);
+
+    resetResult("Sélectionnez les valeurs pour générer le tag.");
+  }
+
+  /*
+   * Met à jour les éléments bloquants lorsque le service change.
+   */
+  function updateBlockingElements() {
+    const cloud = configuration[cloudSelect.value];
+
+    const service = cloud
+      ? cloud.services[serviceSelect.value]
+      : null;
+
+    populateMultipleSelect(
+      blockingSelect,
+      service ? service.blockingElements : []
+    );
+
+    resetResult("Sélectionnez au moins un élément bloquant.");
+  }
+
+  /*
+   * Génère le tag au format :
+   * cloud-service-elementbloquant1-elementbloquant2
+   */
+  function generateTag() {
+    const selection = getValidSelection();
+
+    if (!selection) {
+      resetResult("Sélection incomplète ou invalide.");
+      tagMessage.style.color = "#AE2E24";
+      tagMessage.textContent =
+        "Sélectionnez un Cloud, un service et au moins un élément bloquant autorisé.";
+      return;
+    }
+
+    const parts = [
+      normalizeTag(selection.cloudKey),
+      normalizeTag(selection.serviceKey),
+      ...selection.selectedElements.map(normalizeTag)
+    ];
+
+    generatedTag = parts.join("-");
+
+    tagResult.replaceChildren();
+
+    const tag = document.createElement("span");
+    tag.className = "generated-tag";
+    tag.textContent = generatedTag;
+
+    tagResult.appendChild(tag);
+
+    tagMessage.style.color = "#216E4E";
+    tagMessage.textContent = "Tag généré avec succès.";
+
+    copyButton.disabled = false;
+  }
+
+  /*
+   * Copie le tag.
+   */
+  async function copyTag() {
+    const selection = getValidSelection();
+
+    if (!selection || !generatedTag) {
+      tagMessage.style.color = "#AE2E24";
+      tagMessage.textContent = "Générez d'abord un tag valide.";
+      return;
+    }
+
+    // Reconstruit le tag pour éviter de copier un résultat obsolète.
+    const expectedTag = [
+      normalizeTag(selection.cloudKey),
+      normalizeTag(selection.serviceKey),
+      ...selection.selectedElements.map(normalizeTag)
+    ].join("-");
+
+    if (expectedTag !== generatedTag) {
+      tagMessage.style.color = "#AE2E24";
+      tagMessage.textContent = "Les sélections ont changé. Régénérez le tag.";
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(generatedTag);
+
+      tagMessage.style.color = "#216E4E";
+      tagMessage.textContent = "Tag copié dans le presse-papiers.";
+    } catch (error) {
+      const textarea = document.createElement("textarea");
+
+      textarea.value = generatedTag;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+
+      document.getElementById("cloud-tag-app").appendChild(textarea);
+
+      textarea.select();
+
+      let copied = false;
+
+      try {
+        copied = document.execCommand("copy");
+      } catch (e) {
+        copied = false;
+      }
+
+      textarea.remove();
+
+      tagMessage.style.color = copied ? "#216E4E" : "#AE2E24";
+
+      tagMessage.textContent = copied
+        ? "Tag copié dans le presse-papiers."
+        : "Copie impossible. Sélectionnez le tag manuellement.";
+    }
+  }
+
+  /*
+   * Initialisation du formulaire.
+   */
+  populateSelect(
+    cloudSelect,
+    Object.keys(configuration).map(function (key) {
+      return {
+        value: key,
+        label: configuration[key].label
+      };
+    }),
+    "-- Sélectionner un Cloud --"
+  );
+
+  cloudSelect.addEventListener("change", updateServices);
+
+  serviceSelect.addEventListener("change", updateBlockingElements);
+
+  blockingSelect.addEventListener("change", function () {
+    resetResult("Cliquez sur Générer le tag.");
+  });
+
+  generateButton.addEventListener("click", generateTag);
+
+  copyButton.addEventListener("click", copyTag);
+
+  resetResult("Sélectionnez les valeurs pour générer le tag.");
+
+})();
+</script>
