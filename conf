@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur de tags Cloud</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    color: #172B4D;
+    margin: 20px;
+  }
+
+  .container {
+    max-width: 650px;
+    padding: 24px;
+    border: 1px solid #DFE1E6;
+    border-radius: 8px;
+    background: #FFFFFF;
+  }
+
+  h2 {
+    margin-top: 0;
+  }
+
+  .description {
+    color: #626F86;
+    margin-bottom: 24px;
+  }
+
+  label {
+    display: block;
+    font-weight: bold;
+    margin: 18px 0 8px;
+  }
+
+  select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #B3BAC5;
+    border-radius: 4px;
+    background: white;
+    box-sizing: border-box;
+  }
+
+  select:disabled {
+    background: #F4F5F7;
+    color: #8993A4;
+  }
+
+  .result {
+    margin-top: 24px;
+    padding: 16px;
+    background: #F4F5F7;
+    border-radius: 6px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 6px 10px;
+    margin: 3px;
+    background: #DEEBFF;
+    color: #0747A6;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  button {
+    margin-top: 16px;
+    padding: 11px 18px;
+    background: #0052CC;
+    color: white;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  button:disabled {
+    background: #F4F5F7;
+    color: #8993A4;
+    cursor: not-allowed;
+  }
+
+  #message {
+    margin-top: 14px;
+    font-size: 13px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Générateur de tags Cloud</h2>
+
+  <p class="description">
+    Sélectionnez un Cloud, puis un service et un environnement autorisés.
+  </p>
+
+  <label for="cloud-select">Cloud</label>
+  <select id="cloud-select">
+    <option value="">-- Sélectionner un Cloud --</option>
+  </select>
+
+  <label for="service-select">Service</label>
+  <select id="service-select" disabled>
+    <option value="">-- Sélectionner un service --</option>
+  </select>
+
+  <label for="environment-select">Environnement</label>
+  <select id="environment-select" disabled>
+    <option value="">-- Sélectionner un environnement --</option>
+  </select>
+
+  <div class="result">
+    <h3>Tags générés</h3>
+    <div id="tag-result">Sélectionnez les valeurs pour générer les tags.</div>
+  </div>
+
+  <button id="generate-button" type="button">Générer les tags</button>
+  <button id="copy-button" type="button" disabled>Copier les tags</button>
+
+  <p id="message" role="status" aria-live="polite"></p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /*
+   * CONFIGURATION DES CLOUDS
+   * Remplacez les valeurs d'exemple par vos propres données.
+   */
+  const configuration = {
+    "cloud-1": {
+      label: "Cloud 1",
+      services: [
+        { value: "kubernetes", label: "Kubernetes" },
+        { value: "vm", label: "VM" },
+        { value: "database", label: "Database" }
+      ],
+      environments: [
+        { value: "dev", label: "DEV" },
+        { value: "prod", label: "PROD" }
+      ]
+    },
+
+    "cloud-2": {
+      label: "Cloud 2",
+      services: [
+        { value: "kubernetes", label: "Kubernetes" },
+        { value: "object-storage", label: "Object Storage" }
+      ],
+      environments: [
+        { value: "dev", label: "DEV" },
+        { value: "staging", label: "STAGING" },
+        { value: "prod", label: "PROD" }
+      ]
+    },
+
+    "cloud-3": {
+      label: "Cloud 3",
+      services: [
+        { value: "redis", label: "Redis" },
+        { value: "openshift", label: "OpenShift" }
+      ],
+      environments: [
+        { value: "staging", label: "STAGING" },
+        { value: "prod", label: "PROD" }
+      ]
+    }
+  };
+
+  const cloudSelect = document.getElementById("cloud-select");
+  const serviceSelect = document.getElementById("service-select");
+  const environmentSelect = document.getElementById("environment-select");
+  const tagResult = document.getElementById("tag-result");
+  const generateButton = document.getElementById("generate-button");
+  const copyButton = document.getElementById("copy-button");
+  const message = document.getElementById("message");
+
+  let generatedTags = [];
+
+  /*
+   * Remplit une liste déroulante.
+   */
+  function populateSelect(select, options, placeholder) {
+    select.replaceChildren();
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = placeholder;
+    select.appendChild(defaultOption);
+
+    options.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item.value;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+
+    select.disabled = options.length === 0;
+  }
+
+  /*
+   * Réinitialise les résultats.
+   */
+  function resetResult(text) {
+    generatedTags = [];
+    tagResult.textContent = text;
+    message.textContent = "";
+    copyButton.disabled = true;
+  }
+
+  /*
+   * Vérifie que le service et l'environnement
+   * existent réellement pour le Cloud choisi.
+   */
+  function getValidSelection() {
+    const cloudKey = cloudSelect.value;
+    const cloud = configuration[cloudKey];
+
+    if (!cloud) {
+      return null;
+    }
+
+    const service = cloud.services.find(function (item) {
+      return item.value === serviceSelect.value;
+    });
+
+    const environment = cloud.environments.find(function (item) {
+      return item.value === environmentSelect.value;
+    });
+
+    if (!service || !environment) {
+      return null;
+    }
+
+    return {
+      cloudKey: cloudKey,
+      service: service,
+      environment: environment
+    };
+  }
+
+  /*
+   * Convertit une valeur en tag normalisé.
+   */
+  function normalizeTag(value) {
+    return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  /*
+   * Met à jour les menus lorsque le Cloud change.
+   */
+  function updateCloudOptions() {
+    const cloud = configuration[cloudSelect.value];
+
+    populateSelect(
+      serviceSelect,
+      cloud ? cloud.services : [],
+      "-- Sélectionner un service --"
+    );
+
+    populateSelect(
+      environmentSelect,
+      cloud ? cloud.environments : [],
+      "-- Sélectionner un environnement --"
+    );
+
+    resetResult("Sélectionnez les valeurs pour générer les tags.");
+  }
+
+  /*
+   * Génère les tags.
+   */
+  function generateTags() {
+    const selection = getValidSelection();
+
+    if (!selection) {
+      resetResult("Sélection incomplète ou invalide.");
+      message.style.color = "#AE2E24";
+      message.textContent = "Veuillez vérifier vos sélections.";
+      return;
+    }
+
+    generatedTags = [
+      selection.cloudKey,
+      normalizeTag(selection.service.value),
+      normalizeTag(selection.environment.value)
+    ];
+
+    tagResult.replaceChildren();
+
+    generatedTags.forEach(function (name) {
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = name;
+      tagResult.appendChild(tag);
+    });
+
+    message.style.color = "#216E4E";
+    message.textContent = "Tags générés avec succès.";
+    copyButton.disabled = false;
+  }
+
+  /*
+   * Copie les tags dans le presse-papiers.
+   */
+  async function copyTags() {
+    if (!getValidSelection() || generatedTags.length !== 3) {
+      message.style.color = "#AE2E24";
+      message.textContent = "Générez d'abord des tags valides.";
+      return;
+    }
+
+    const textToCopy = generatedTags.join("\n");
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+
+      message.style.color = "#216E4E";
+      message.textContent = "Tags copiés dans le presse-papiers.";
+    } catch (error) {
+      const textarea = document.createElement("textarea");
+      textarea.value = textToCopy;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      let copied = false;
+
+      try {
+        copied = document.execCommand("copy");
+      } catch (e) {
+        copied = false;
+      }
+
+      textarea.remove();
+
+      message.style.color = copied ? "#216E4E" : "#AE2E24";
+      message.textContent = copied
+        ? "Tags copiés dans le presse-papiers."
+        : "Copie impossible. Sélectionnez les tags manuellement.";
+    }
+  }
+
+  /*
+   * Initialisation des listes déroulantes.
+   */
+  populateSelect(
+    cloudSelect,
+    Object.keys(configuration).map(function (key) {
+      return {
+        value: key,
+        label: configuration[key].label
+      };
+    }),
+    "-- Sélectionner un Cloud --"
+  );
+
+  cloudSelect.addEventListener("change", updateCloudOptions);
+
+  serviceSelect.addEventListener("change", function () {
+    resetResult("Cliquez sur Générer les tags.");
+  });
+
+  environmentSelect.addEventListener("change", function () {
+    resetResult("Cliquez sur Générer les tags.");
+  });
+
+  generateButton.addEventListener("click", generateTags);
+  copyButton.addEventListener("click", copyTags);
+
+})();
+</script>
+
+</body>
+</html>
