@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de tags Cloud</title>
+</head>
+
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #172B4D; background-color: #FFFFFF;">
+
+    <div style="max-width: 800px; margin: 0 auto; padding: 24px; border: 1px solid #DFE1E6; border-radius: 8px; background-color: #FFFFFF;">
+
+        <h1 style="margin-top: 0; margin-bottom: 24px; font-size: 24px; color: #172B4D;">
+            Générateur de tags Cloud
+        </h1>
+
+        <!-- CLOUD -->
+        <div style="margin-bottom: 20px;">
+            <label for="cloud" style="display: block; margin-bottom: 8px; font-weight: bold;">
+                Cloud
+            </label>
+
+            <select id="cloud" style="width: 100%; padding: 10px; border: 1px solid #C1C7D0; border-radius: 4px; background-color: #FFFFFF; color: #172B4D; font-size: 14px;">
+                <option value="">-- Sélectionner un cloud --</option>
+            </select>
+        </div>
+
+        <!-- SERVICE -->
+        <div style="margin-bottom: 20px;">
+            <label for="service" style="display: block; margin-bottom: 8px; font-weight: bold;">
+                Service
+            </label>
+
+            <select id="service" disabled style="width: 100%; padding: 10px; border: 1px solid #C1C7D0; border-radius: 4px; background-color: #FFFFFF; color: #172B4D; font-size: 14px;">
+                <option value="">-- Sélectionner un service --</option>
+            </select>
+        </div>
+
+        <!-- ÉLÉMENTS BLOQUANTS -->
+        <div style="margin-bottom: 20px;">
+            <label for="blocking-elements" style="display: block; margin-bottom: 8px; font-weight: bold;">
+                Éléments bloquants
+            </label>
+
+            <select id="blocking-elements" multiple size="7" disabled style="width: 100%; min-height: 170px; padding: 10px; border: 1px solid #C1C7D0; border-radius: 4px; background-color: #FFFFFF; color: #172B4D; font-size: 14px;">
+            </select>
+
+            <span style="display: block; margin-top: 6px; font-size: 12px; color: #6B778C;">
+                Maintenez Ctrl (Windows) ou Cmd (Mac) pour sélectionner plusieurs éléments.
+            </span>
+        </div>
+
+        <!-- BOUTONS -->
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px;">
+
+            <button id="generate-button" type="button" style="padding: 10px 16px; border: none; border-radius: 4px; background-color: #0052CC; color: #FFFFFF; cursor: pointer; font-size: 14px; font-weight: bold;">
+                Générer le tag
+            </button>
+
+            <button id="copy-button" type="button" style="padding: 10px 16px; border: none; border-radius: 4px; background-color: #EBECF0; color: #172B4D; cursor: pointer; font-size: 14px; font-weight: bold;">
+                Copier le tag
+            </button>
+
+            <button id="reset-button" type="button" style="padding: 10px 16px; border: none; border-radius: 4px; background-color: #EBECF0; color: #172B4D; cursor: pointer; font-size: 14px; font-weight: bold;">
+                Réinitialiser
+            </button>
+
+        </div>
+
+        <!-- RÉSULTAT -->
+        <div style="margin-top: 28px; padding: 16px; border: 1px solid #DFE1E6; border-radius: 4px; background-color: #F4F5F7;">
+
+            <h2 style="margin-top: 0; font-size: 18px;">
+                Tag généré
+            </h2>
+
+            <div id="tag-result" aria-live="polite" style="min-height: 24px; padding: 12px; border: 1px solid #DFE1E6; border-radius: 4px; background-color: #FFFFFF; overflow-wrap: anywhere; font-family: monospace; font-size: 14px;">
+                Aucun tag généré.
+            </div>
+
+            <div id="status-message" aria-live="polite" style="margin-top: 10px; font-size: 13px;"></div>
+
+        </div>
+
+    </div>
+
+    <script>
+        /*
+         * CONFIGURATION DES CLOUDS, SERVICES ET ÉLÉMENTS BLOQUANTS
+         *
+         * Pour ajouter un service :
+         * 1. Ajouter son identifiant dans le cloud concerné.
+         * 2. Définir son label.
+         * 3. Définir ses blockingElements.
+         */
+
+        const configuration = {
+            "cloud-1": {
+                label: "Cloud 1",
+
+                services: {
+                    "kubernetes": {
+                        label: "Kubernetes",
+                        blockingElements: ["cpu", "memory", "disk", "network"]
+                    },
+
+                    "vm": {
+                        label: "VM",
+                        blockingElements: ["cpu", "memory", "disk"]
+                    },
+
+                    "database": {
+                        label: "Database",
+                        blockingElements: ["connection", "storage", "performance"]
+                    }
+                }
+            },
+
+            "cloud-2": {
+                label: "Cloud 2",
+
+                services: {
+                    "kubernetes": {
+                        label: "Kubernetes",
+                        blockingElements: ["cpu", "memory", "pod"]
+                    },
+
+                    "object-storage": {
+                        label: "Object Storage",
+                        blockingElements: ["access", "quota", "availability"]
+                    }
+                }
+            },
+
+            "cloud-3": {
+                label: "Cloud 3",
+
+                services: {
+                    "redis": {
+                        label: "Redis",
+                        blockingElements: ["memory", "connection", "latency"]
+                    },
+
+                    "openshift": {
+                        label: "OpenShift",
+                        blockingElements: ["cpu", "memory", "deployment"]
+                    }
+                }
+            }
+        };
+
+        /*
+         * RÉFÉRENCES HTML
+         */
+
+        const cloudSelect = document.getElementById("cloud");
+        const serviceSelect = document.getElementById("service");
+        const blockingSelect = document.getElementById("blocking-elements");
+
+        const tagResult = document.getElementById("tag-result");
+        const statusMessage = document.getElementById("status-message");
+
+        /*
+         * INITIALISATION DES CLOUDS
+         */
+
+        function initializeClouds() {
+            Object.entries(configuration).forEach(([cloudKey, cloud]) => {
+                const option = document.createElement("option");
+
+                option.value = cloudKey;
+                option.textContent = cloud.label;
+
+                cloudSelect.appendChild(option);
+            });
+        }
+
+        /*
+         * MISE À JOUR DES SERVICES SELON LE CLOUD
+         */
+
+        function updateServices() {
+            const selectedCloud = cloudSelect.value;
+
+            serviceSelect.innerHTML =
+                '<option value="">-- Sélectionner un service --</option>';
+
+            blockingSelect.innerHTML = "";
+
+            serviceSelect.disabled = true;
+            blockingSelect.disabled = true;
+
+            clearResult();
+
+            if (!selectedCloud || !configuration[selectedCloud]) {
+                return;
+            }
+
+            const services = configuration[selectedCloud].services;
+
+            Object.entries(services).forEach(([serviceKey, service]) => {
+                const option = document.createElement("option");
+
+                option.value = serviceKey;
+                option.textContent = service.label;
+
+                serviceSelect.appendChild(option);
+            });
+
+            serviceSelect.disabled = false;
+        }
+
+        /*
+         * MISE À JOUR DES ÉLÉMENTS BLOQUANTS SELON LE SERVICE
+         */
+
+        function updateBlockingElements() {
+            const selectedCloud = cloudSelect.value;
+            const selectedService = serviceSelect.value;
+
+            blockingSelect.innerHTML = "";
+            blockingSelect.disabled = true;
+
+            clearResult();
+
+            if (
+                !selectedCloud ||
+                !selectedService ||
+                !configuration[selectedCloud] ||
+                !configuration[selectedCloud].services[selectedService]
+            ) {
+                return;
+            }
+
+            const blockingElements =
+                configuration[selectedCloud]
+                    .services[selectedService]
+                    .blockingElements;
+
+            blockingElements.forEach(element => {
+                const option = document.createElement("option");
+
+                option.value = element;
+                option.textContent = element;
+
+                blockingSelect.appendChild(option);
+            });
+
+            blockingSelect.disabled = blockingElements.length === 0;
+        }
+
+        /*
+         * RÉCUPÉRATION DES ÉLÉMENTS BLOQUANTS SÉLECTIONNÉS
+         */
+
+        function getSelectedBlockingElements() {
+            return Array.from(blockingSelect.selectedOptions)
+                .map(option => option.value);
+        }
+
+        /*
+         * GÉNÉRATION DU TAG
+         *
+         * Format :
+         * [CLOUD]-[SERVICE]-[ELEMENT1]-[ELEMENT2]
+         *
+         * Exemple :
+         * [CLOUD-1]-[KUBERNETES]-[CPU]-[MEMORY]
+         */
+
+        function generateTag() {
+            const selectedCloud = cloudSelect.value;
+            const selectedService = serviceSelect.value;
+            const selectedElements = getSelectedBlockingElements();
+
+            clearStatus();
+
+            if (!selectedCloud) {
+                showError("Veuillez sélectionner un cloud.");
+                return;
+            }
+
+            if (!selectedService) {
+                showError("Veuillez sélectionner un service.");
+                return;
+            }
+
+            if (selectedElements.length === 0) {
+                showError("Veuillez sélectionner au moins un élément bloquant.");
+                return;
+            }
+
+            const tag = [
+                selectedCloud,
+                selectedService,
+                ...selectedElements
+            ]
+                .map(element => `[${element.toUpperCase()}]`)
+                .join("-");
+
+            tagResult.textContent = tag;
+
+            showSuccess("Tag généré avec succès.");
+        }
+
+        /*
+         * COPIE DU TAG
+         */
+
+        async function copyTag() {
+            const tag = tagResult.textContent.trim();
+
+            clearStatus();
+
+            if (!tag || tag === "Aucun tag généré.") {
+                showError("Veuillez d'abord générer un tag.");
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(tag);
+
+                showSuccess("Tag copié dans le presse-papiers.");
+
+            } catch (error) {
+                const temporaryInput = document.createElement("textarea");
+
+                temporaryInput.value = tag;
+                temporaryInput.style.position = "fixed";
+                temporaryInput.style.opacity = "0";
+
+                document.body.appendChild(temporaryInput);
+                temporaryInput.select();
+
+                const copied = document.execCommand("copy");
+
+                document.body.removeChild(temporaryInput);
+
+                if (copied) {
+                    showSuccess("Tag copié dans le presse-papiers.");
+                } else {
+                    showError("Copie impossible. Veuillez copier le tag manuellement.");
+                }
+            }
+        }
+
+        /*
+         * RÉINITIALISATION DU FORMULAIRE
+         */
+
+        function resetForm() {
+            cloudSelect.value = "";
+
+            serviceSelect.innerHTML =
+                '<option value="">-- Sélectionner un service --</option>';
+
+            blockingSelect.innerHTML = "";
+
+            serviceSelect.disabled = true;
+            blockingSelect.disabled = true;
+
+            clearResult();
+        }
+
+        /*
+         * GESTION DES MESSAGES
+         */
+
+        function showError(message) {
+            statusMessage.textContent = message;
+            statusMessage.style.color = "#DE350B";
+        }
+
+        function showSuccess(message) {
+            statusMessage.textContent = message;
+            statusMessage.style.color = "#00875A";
+        }
+
+        function clearStatus() {
+            statusMessage.textContent = "";
+            statusMessage.style.color = "";
+        }
+
+        function clearResult() {
+            tagResult.textContent = "Aucun tag généré.";
+            clearStatus();
+        }
+
+        /*
+         * ÉVÉNEMENTS
+         */
+
+        cloudSelect.addEventListener("change", updateServices);
+
+        serviceSelect.addEventListener("change", updateBlockingElements);
+
+        document.getElementById("generate-button")
+            .addEventListener("click", generateTag);
+
+        document.getElementById("copy-button")
+            .addEventListener("click", copyTag);
+
+        document.getElementById("reset-button")
+            .addEventListener("click", resetForm);
+
+        /*
+         * DÉMARRAGE
+         */
+
+        initializeClouds();
+    </script>
+
+</body>
+</html>
