@@ -1,0 +1,91 @@
+const configuration = {
+    "APCODE": {
+        label: "APCODE",
+        blockingElements: ["ACCESS", "CUSTOMER_PAYLOAD", "HVAULT", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "SFM", "TFE", "WORKING_AS_DESIGNED"]
+    },
+
+    "AUTOSYS": {
+        label: "AUTOSYS",
+        blockingElements: ["CUSTOMER_PAYLOAD"]
+    },
+
+    "BUCKET": {
+        label: "BUCKET",
+        blockingElements: ["CUSTOMER_PAYLOAD", "HVAULT", "IBM_ACCESS", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "CLUSTER_KAFKA": {
+        label: "CLUSTER_KAFKA",
+        blockingElements: ["CUSTOMER_PAYLOAD", "HVAULT", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "SFM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "COS": {
+        label: "COS",
+        blockingElements: ["CUSTOMER_PAYLOAD", "HVAULT", "IBM_ACCESS", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "MONGO": {
+        label: "MONGO",
+        blockingElements: ["BACKUP", "CUSTOMER_PAYLOAD", "HVAULT", "IBM_ACCESS", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "MQ": {
+        label: "MQ",
+        blockingElements: ["ORCHESTRATOR"]
+    },
+
+    "NAS": {
+        label: "NAS",
+        blockingElements: ["CUSTOMER_PAYLOAD", "FORM_MKP", "ORCHESTRATOR"]
+    },
+
+    "ORACLE": {
+        label: "ORACLE",
+        blockingElements: ["CUSTOMER_PAYLOAD", "HVAULT", "IBM_SCHEMATICS", "KEYCLOAK", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "PACKAGE": {
+        label: "PACKAGE",
+        blockingElements: ["ACCESS", "ANSIBLE", "CUSTOMER_PAYLOAD", "HVAULT", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "POSTGRES": {
+        label: "POSTGRES",
+        blockingElements: ["BACKUP", "CUSTOMER_PAYLOAD", "HVAULT", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "REDIS": {
+        label: "REDIS",
+        blockingElements: ["BACKUP", "CUSTOMER_PAYLOAD", "HVAULT", "IBM_ACCESS", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "REALM": {
+        label: "REALM",
+        blockingElements: ["ACCESS", "CUSTOMER_PAYLOAD", "HVAULT", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "SFM", "TFE", "WORKING_AS_DESIGNED"]
+    },
+
+    "ROKS": {
+        label: "ROKS",
+        blockingElements: ["CONTAINER_REGISTRY", "CORE_DNS", "CRONJOB", "CUSTOMER_PAYLOAD", "DEPLOYMENT", "DYNATRACE", "HVAULT", "IBM_ACCESS", "IBM_SCHEMATICS", "INGRESS", "JOB", "MARKETPLACE", "ORCHESTRATOR", "PODS", "PVC", "SAAM", "SERVICE", "SFM", "STATEFUL_SET", "SYSDIG", "TFE", "TOOLCHAIN", "VPE", "WORKING_AS_DESIGNED"]
+    },
+
+    "ROKSNS": {
+        label: "ROKSNS",
+        blockingElements: ["CONTAINER_REGISTRY", "CUSTOMER_PAYLOAD", "DASHBOARD", "FLOWS", "HVAULT", "IBM_ACCESS", "IBM_SCHEMATICS", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN", "VPE", "WORKING_AS_DESIGNED"]
+    },
+
+    "SQL_SERVER": {
+        label: "SQL_SERVER",
+        blockingElements: ["CUSTOMER_PAYLOAD", "HVAULT", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "TFE", "TOOLCHAIN"]
+    },
+
+    "VIP": {
+        label: "VIP",
+        blockingElements: ["CERTIFICAT", "CUSTOMER_PAYLOAD", "FLOWS", "HVAULT", "IWORKFLOW", "LABEL", "MARKETPLACE", "ORCHESTRATOR", "SAAM", "SFM", "SWAGGER", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    },
+
+    "VSI": {
+        label: "VSI",
+        blockingElements: ["ACCESS", "ANSIBLE", "CUSTOMER_PAYLOAD", "HVAULT", "IBM_SCHEMATICS", "IGNIMISSION", "MARKETPLACE", "ORCHESTRATOR", "PACKAGES", "SAAM", "SAILPOINT", "SCCM", "TFE", "TOOLCHAIN", "WORKING_AS_DESIGNED"]
+    }
+};
